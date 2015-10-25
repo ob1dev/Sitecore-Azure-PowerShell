@@ -1,2 +1,3 @@
-# Sitecore-Azure-PowerShell-
-Sitecore Azure PowerShell cmdlets to deploy and manage Sitecore solutions.
+# Sitecore Azure PowerShell
+
+This repository contains a set of PowerShell cmdlets for developers and administrators to deploy Sitecore solutions.

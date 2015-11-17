@@ -437,6 +437,54 @@ function Get-SitecoreAzureSqlServerStatus
 
   Write-Progress -Id 0 -activity "Start-AzureSqlDatabaseImport task status:" -Completed
 }
+
+# Gets Azure SQL Database connection string.
+function Get-SitecoreAzureSqlDatabaseConnectionString
+{
+  [cmdletbinding()]
+  param([Parameter(Position=0, Mandatory = $true)]        
+        [ValidateNotNull()]
+        [Microsoft.Azure.Commands.Resources.Models.PSResourceGroup]
+        $ResourceGroup,
+        [Parameter(Position=1, Mandatory = $true)]        
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $SqlServerName,
+        [Parameter(Position=2, Mandatory = $true)]        
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $AzureSqlServerAdminLogin,
+        [Parameter(Position=3, Mandatory = $true)]        
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $AzureSqlServerPassword
+  )
+
+  $sqlDatabaseList = Get-AzureRmSqlDatabase -ResourceGroupName $ResourceGroup.ResourceGroupName `
+                                            -ServerName $SqlServerName
+  
+  $connectionStringList = New-Object System.Collections.Generic.List[System.Object]
+
+  foreach ($database in $sqlDatabaseList)
+  {
+    if ($database.DatabaseName -ne "master")
+    {
+      $secureConnectionPolicy = Get-AzureRmSqlDatabaseSecureConnectionPolicy -ResourceGroupName $ResourceGroup.ResourceGroupName `
+                                                                             -ServerName $SqlServerName `
+                                                                             -DatabaseName $database.DatabaseName
+
+      $info = @{      
+        DatabaseName = $database.DatabaseName;
+        ConnectionString = $secureConnectionPolicy.ConnectionStrings.AdoNetConnectionString.Replace("{your_user_id_here}", $AzureSqlServerAdminLogin).Replace("{your_password_here}", $AzureSqlServerPassword)
+      }
+
+      $connectionStringList.Add((New-Object -Type PSObject -Property $info))
+    }
+  }
+    
+  Write-Host ($connectionStringList| Format-List | Out-String)
+}
+
 <#
   .SYNOPSIS
   Describe the function here
@@ -542,6 +590,11 @@ function Publish-SitecoreSqlDatabase
                                                        -StorageAccountContext $storageAccountContext  
  
   Get-SitecoreAzureSqlServerStatus -ImportRequestList $importRequestList
+  
+  Get-SitecoreAzureSqlDatabaseConnectionString -ResourceGroup $resourceGroup `
+                                               -SqlServerName $AzureSqlServerName `
+                                               -AzureSqlServerAdminLogin $AzureSqlServerAdminLogin `
+                                               -AzureSqlServerPassword $AzureSqlServerPassword
 
   Remove-Item $outputDirectory -Recurse -Force
 } 

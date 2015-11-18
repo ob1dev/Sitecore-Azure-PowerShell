@@ -541,12 +541,12 @@ function Publish-SitecoreSqlDatabase
     [ValidateNotNullOrEmpty()]
     [ValidateLength(3, 24)]
     [System.String]
-    $AzureStorageAccountName = "sitecoreazure{0}" -f (Get-Date -format yyyyMd),
+    $AzureStorageAccountName = "sitecoreazure{0}" -f (Get-AzureRmContext).Subscription.SubscriptionId.Substring(0, 8),
 
     [Parameter(Position=7, Mandatory = $false)]        
     [ValidateNotNullOrEmpty()]        
     [System.String]
-    $AzureSqlServerName = "sitecore-azure-{0}" -f (Get-Date -format yyyyMd), #([Guid]::NewGuid().Guid.Substring(0, 8)),
+    $AzureSqlServerName = "sitecore-azure-{0}" -f (Get-AzureRmContext).Subscription.SubscriptionId.Substring(0, 8),
 
     [Parameter(Position=8, Mandatory = $false)]        
     [ValidateNotNullOrEmpty()]

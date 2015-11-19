@@ -58,9 +58,10 @@ function Export-SitecoreAzureSqlDatabase
   # The disk directory path where the *.bacpac file will be written.
   $outputDirectory = New-Item -ItemType Directory -Path $tempPath -Name "Sitecore\BACPAC\" -Force
 
-  # For more information about the SqlPackage.exe utility, see the MSDN web site
-  # https://msdn.microsoft.com/en-us/library/hh550080%28v=vs.103%29.aspx
-  $sqlpackageExe = "C:\Program Files (x86)\Microsoft SQL Server\120\DAC\bin\sqlpackage.exe" 
+  # For more information about the SqlPackage.exe utility, see the MSDN web site https://msdn.microsoft.com/en-us/library/hh550080%28v=vs.103%29.aspx  
+  Import-Module sqlps -DisableNameChecking    
+  $sqlServerVersion = (Get-Item -Path ("SQLSERVER:\SQL\{0}" -f $SqlServerName)).Version     
+  $sqlpackageExe = "{0}\Microsoft SQL Server\{1}{2}\DAC\bin\sqlpackage.exe" -f ${env:ProgramFiles(x86)}, $sqlServerVersion.Major, $sqlServerVersion.Minor
 
   foreach ($databaseName in $sqlServerDatabaseList)
   {

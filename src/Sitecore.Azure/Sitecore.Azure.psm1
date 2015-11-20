@@ -1,55 +1,21 @@
-﻿# Adding the Azure account to Windows PowerShell.
-function Login-SitecoreAzureAccount 
-{
-  [cmdletbinding()]
-  param(    
-  ) 
-  
-  try
-  {
-    $subscription = Get-AzureRmSubscription
-  }
-  catch
-  {
-    Login-AzureRmAccount    
-    Get-AzureRmSubscription
-    
-    $subscriptionName = Read-Host -Prompt "Enter Subscription Name that you want to use"
-    Get-AzureRmSubscription –SubscriptionName $subscriptionName | Select-AzureRmSubscription
-  } 
-
-<#
-  Get-AzureSubscription -Default -ErrorAction SilentlyContinue 
-
-  # Hack since the Get-AzureSubscription -Default cmdlet does not throw an exception.
-  $lastError = $Error.Item(0).ToString()
-  if ($lastError.StartsWith("No default subscription has been designated."))
-  {
-    Get-AzureRmSubscription
-    $subscriptionName = Read-Host -Prompt "Type Subscription Name that you want to use"
-    Get-AzureRmSubscription –SubscriptionName $subscriptionName | Select-AzureRmSubscription
-  }  
-#>
-} 
-
-# Exporting a database schema and user data from SQL Server to a BACPAC package (.bacpac file).
+﻿# Exports a database schema and user data from a SQL Server to a BACPAC package (.bacpac file).
 function Export-SitecoreAzureSqlDatabase
 {
   param([Parameter(Position=0, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
-        [String]
-        $SqlServerName = ".\SQLEXPRESS",                             
+        [System.String]
+        $SqlServerName,                             
         [Parameter(Position=1, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
-        [String]
-        $SqlServerUser = "sa",
+        [System.String]
+        $SqlServerUser,
         [Parameter(Position=2, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
-        [String]
-        $SqlServerPassword = "12345",
+        [System.String]
+        $SqlServerPassword,
         [Parameter(Position=3, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
-        [String[]]
+        [System.String[]]
         $SqlServerDatabaseList
   )
 
@@ -87,18 +53,18 @@ function Export-SitecoreAzureSqlDatabase
   return $outputDirectory
 } 
 
-# Creating an Azure Resource Group for keeping resources such as Azure Storage, Azure SQL Server and Azure SQL Database.
+# Gets an Azure Resource Group for keeping resources such as Storage, SQL Server and SQL Database in one scope.
 function Get-SitecoreAzureResourceGroup 
 {
   [cmdletbinding()]
   param([Parameter(Position=0, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
         [System.String]
-        $Name = "Sitecore-Azure",
+        $Name,
         [Parameter(Position=1, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
         [System.String] 
-        $Location = "West US"
+        $Location
   ) 
     
   # Check if Azure Resource Group exists. If it does not, create it.
@@ -117,7 +83,7 @@ function Get-SitecoreAzureResourceGroup
   return $resourceGroup
 } 
 
-# Creating an Azure Storage and uploading a BACPAC packages (*.bacpac files) to a Container.
+# Creates an Azure Storage and uploading a BACPAC packages (*.bacpac files) to a Container.
 function Get-SitecoreAzureStorageAccount 
 {
   [cmdletbinding()]
@@ -128,8 +94,8 @@ function Get-SitecoreAzureStorageAccount
         [Parameter(Position=1, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
         [System.String] 
-        $AccountName = "sitecoreazure",        
-        [Parameter(Position=3, Mandatory = $false)]        
+        $AccountName,        
+        [Parameter(Position=2, Mandatory = $false)]        
         [ValidateNotNullOrEmpty()]
         [System.String]
         $ContainerName = "databases"
@@ -174,7 +140,7 @@ function Get-SitecoreAzureStorageAccount
   return $storageAccountContext
 } 
 
-# Upload local Sitecore BACPAC packages (*.bacpac files) to Azure Storage Blob.
+# Uploads local Sitecore BACPAC packages (*.bacpac files) to a Storage Blob.
 function Set-SitecoreAzureBacpacFile 
 {
   [cmdletbinding()]
@@ -199,7 +165,7 @@ function Set-SitecoreAzureBacpacFile
   Get-AzureStorageBlob -Container $ContainerName -Context $StorageAccountContext | Out-Host  
 }
 
-# Creating an Azure SQL Server and setting up the firewall.
+# Creates an Azure SQL Server and setting up the firewall.
 function Get-SitecoreAzureSqlServer 
 {
   [cmdletbinding()]
@@ -210,7 +176,7 @@ function Get-SitecoreAzureSqlServer
         [Parameter(Position=1, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]        
         [System.String]
-        $ServerName = "sitecore-azure",
+        $ServerName,
         [Parameter(Position=2, Mandatory = $true)]        
         [ValidateNotNull()]
         [PSCredential]
@@ -240,7 +206,7 @@ function Get-SitecoreAzureSqlServer
   return $sqlServer 
 }
 
-# Setting an Azure SQL Server Firewall Rule.
+# Sets an Azure SQL Server Firewall Rule.
 function Set-SitecoreAzureSqlServerFirewallRule 
 { 
   [cmdletbinding()]
@@ -296,7 +262,7 @@ function Set-SitecoreAzureSqlServerFirewallRule
   }
 } 
 
-# Importing Azure SQL Databases from a Blob Storage.
+# Imports Azure SQL Databases from a Blob Storage.
 function Import-SitecoreAzureSqlDatabase 
 {
   [cmdletbinding()]
@@ -326,9 +292,7 @@ function Import-SitecoreAzureSqlDatabase
                                    -Container $ContainerName
 
   $importRequestList = New-Object System.Collections.Generic.List[System.Object]
-
-  #Import-AzurePublishSettingsFile -PublishSettingsFile "C:\Users\obu\Documents\Sitecore License\USA\Azure\Visual Studio Premium with MSDN-Sitecore US PSS OBU-10-17-2015-credentials.publishsettings" | Out-Host
-   
+ 
   # Import to Azure SQL Database using *.bacpac files from Azure Storage Account.
   foreach ($blob in $blobList)
   {  
@@ -348,7 +312,7 @@ function Import-SitecoreAzureSqlDatabase
         $sqlDatabase = New-AzureRmSqlDatabase –ResourceGroupName $ResourceGroup.ResourceGroupName `
                                               –ServerName $SqlServerName `
                                               –DatabaseName $databaseName `
-                                              -RequestedServiceObjectiveName "S3"
+                                              -RequestedServiceObjectiveName "S2"
       }     
       
       $sqlDatabaseServerContext = New-AzureSqlDatabaseServerContext -ServerName $SqlServerName `
@@ -369,7 +333,7 @@ function Import-SitecoreAzureSqlDatabase
   return $importRequestList
 } 
 
-# Get a status of the import request.
+# Gets a status of the import request.
 function Get-SitecoreAzureSqlServerStatus 
 {
   [cmdletbinding()]
@@ -390,7 +354,6 @@ function Get-SitecoreAzureSqlServerStatus
   {  
     for ($index = 0; $index -lt $ImportRequestList.Count; $index++)
     {      
-      #[Microsoft.WindowsAzure.Commands.SqlDatabase.Services.ImportExport.StatusInfo]$importStatus = Get-AzureSqlDatabaseImportExportStatus -Request $ImportRequestList[$index]
       $importStatus = Get-AzureSqlDatabaseImportExportStatus -Request $ImportRequestList[$index]
 
       if ($importStatus.Status -eq "Failed")
@@ -511,7 +474,7 @@ function Publish-SitecoreSqlDatabase
     [Parameter(Position=0, Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [System.String]
-    $SqlServerName = ".\SQLEXPRESS",
+    $SqlServerName = "$env:COMPUTERNAME\SQLEXPRESS",
 
     [Parameter(Position=1, Mandatory = $true)]                             
     [ValidateNotNullOrEmpty()]
@@ -560,8 +523,6 @@ function Publish-SitecoreSqlDatabase
     $AzureSqlServerPassword = "Experienc3!"
   )  
 
-  Login-SitecoreAzureAccount
-      
   $outputDirectory = Export-SitecoreAzureSqlDatabase -sqlServerName $SqlServerName `
                                                      -sqlServerUser $SqlServerAdminLogin `
                                                      -sqlServerPassword $SqlServerPassword `
@@ -591,7 +552,7 @@ function Publish-SitecoreSqlDatabase
                                                        -StorageAccountContext $storageAccountContext  
  
   Get-SitecoreAzureSqlServerStatus -ImportRequestList $importRequestList
-  
+
   Get-SitecoreAzureSqlDatabaseConnectionString -ResourceGroup $resourceGroup `
                                                -SqlServerName $AzureSqlServerName `
                                                -AzureSqlServerAdminLogin $AzureSqlServerAdminLogin `
@@ -622,12 +583,12 @@ $paramHash = @{
  DotNetFrameworkVersion = "4.0"
  CLRVersion="4.0"
  ProcessorArchitecture = "None"
- RequiredModules = @(
-   @{ ModuleName = "AzureRM"; ModuleVersion = "0.9.11"},
-   @{ ModuleName = "AzureRM"; ModuleVersion = "1.0.1"},
-   @{ ModuleName = "AzureRM.Resources"; ModuleVersion = "0.10.0"},
-   @{ ModuleName = "AzureRM.Storage"; ModuleVersion = "0.10.1"},
-   @{ ModuleName = "AzureRM.Sql"; ModuleVersion = "0.10.0"}
+ RequiredModules = @(   
+   @{ ModuleName = "AzureRM"; ModuleVersion = "1.0.2"},
+   @{ ModuleName = "AzureRM.profile"; ModuleVersion = "1.0.1"},
+   @{ ModuleName = "AzureRM.Resources"; ModuleVersion = "1.0.1"},
+   @{ ModuleName = "AzureRM.Storage"; ModuleVersion = "1.0.1"},
+   @{ ModuleName = "AzureRM.Sql"; ModuleVersion = "1.0.1"}
  )
  RequiredAssemblies = @() 
  ScriptsToProcess = @()  

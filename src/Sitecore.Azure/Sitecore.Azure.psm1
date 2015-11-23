@@ -1,4 +1,4 @@
-﻿# Exports a database schema and user data from a SQL Server to a BACPAC package (.bacpac file).
+﻿# Exports a database schema and user data from a local SQL Server to a BACPAC package (.bacpac file).
 function Export-SitecoreAzureSqlDatabase
 {
   param([Parameter(Position=0, Mandatory = $true)]        
@@ -451,22 +451,141 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
 
 <#
   .SYNOPSIS
-  Describe the function here
+    Publishes one or more Sitecore SQL Server databases.
   
   .DESCRIPTION
-  Describe the function in more detail
+    The Publish-SitecoreSqlDatabase cmdlet publishes one or more Sitecore SQL Server databases from a local SQL Server to Azure SQL Database Server.    
+   
+    This command creates the following Azure Resources, which are grouped in a single Resource Group using the same Azure data center location:
+
+      - Resource Group
+      - Storage Account
+      - SQL Database Server
+      - SQL Databases       
   
+    This command exports databases from a local SQL Server to a BACPAC packages (.bacpac files), and uploads to a Blob Container of a Storage Account. Initiates an import operation from Azure Blob storage to an Azure SQL Database.
+
+  .Link
+    https://github.com/olegburov/Sitecore-Azure-PowerShell/ 
+  
+  .PARAMETER SqlServerName
+    Specifies the name of the local SQL Server the databases are in. The name must be in the following format {ComputerName}\{InstanceName}, such as "Oleg-PC\SQLEXPRESS".
+
+  .PARAMETER SqlServerAdminLogin
+    Specifies the SQL Server administrator name for the local server.
+
+  .PARAMETER SqlServerPassword
+    Specifies the SQL Server administrator password for the local server.
+
+  .PARAMETER SqlServerDatabaseList
+    Specifies the list of the database names to retrieve from a local server.
+
+  .PARAMETER AzureResourceGroupName
+    Specifies the name of the resource group in which to create Storage Account, SQL Server and SQL Databases are created. The resource name must be unique in the subscription.
+
+  .PARAMETER AzureResourceGroupLocation
+    Specifies the location of the resource group. Enter an Azure data center location, such as "West US" or "Southeast Asia". You can place a resource group in any location.
+
+  .PARAMETER AzureStorageAccountName
+    Specifies the name of the new Storage Account. The storage name must be globally unique.
+
+  .PARAMETER AzureSqlServerName
+    Specifies the name of the new SQL Database server. The server name must be globally unique.
+
+  .PARAMETER AzureSqlServerAdminLogin
+    Specifies the SQL Database server administrator name for the new server.
+
+  .PARAMETER AzureSqlServerPassword
+    Specifies the SQL Database server administrator password for the new server.
+
+
+
+  .EXAMPLE       
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web")
+        
+    This command publishes the SQL Server database "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server.
+  
+
+
+    DatabaseName     : sc81initial_core
+    ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_core;User 
+                       ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_master
+    ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_master;User 
+                       ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_web
+    ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_web;User 
+                       ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
   .EXAMPLE
-  Give an example of how to use it
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_web") -AzureResourceGroupName "My-Company-Name" -AzureResourceGroupLocation "Australia East"
+        
+    This command publishes the SQL Server databases "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server in the Resource Group "My-Company-Name" at the Azure data center "Australia East".
+
+
+
+    DatabaseName     : sc81initial_web
+    ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_web;User 
+                       ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+  .EXAMPLE    
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_web") -AzureStorageAccountName "mycompanyname"
+        
+    This command publishes the SQL Server databases "sc81initial_core" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server using the Azure Storage Account "mycompanyname" for BACPAC packages (.bacpac files).
   
-  .EXAMPLE
-  Give another example of how to use it
+
+
+    DatabaseName     : sc81initial_core
+    ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_core;User 
+                       ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_web
+    ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_web;User 
+                       ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+                       
+  .EXAMPLE   
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web") -AzureSqlServerName "sitecore-azure" -AzureSqlServerAdminLogin "sitecore" -AzureSqlServerPassword "Experienc3!"
+        
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server in the Azure data center "West Europe".
   
-  .PARAMETER computername
-  The computer name to query. Just one.
-  
-  .PARAMETER logname
-  The name of a file to write failed computer names to. Defaults to errors.txt.
+
+
+    DatabaseName     : sc81initial_core
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_core;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_master
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_master;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_web
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_web;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+  .EXAMPLE   
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web", "sc81initial_reporting") -AzureResourceGroupName "My-Company-Name" -AzureResourceGroupLocation "West Europe" -AzureStorageAccountName "mycompanyname" -AzureSqlServerName "sitecore-azure" -AzureSqlServerAdminLogin "sitecore" -AzureSqlServerPassword "Experienc3!" 
+    
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PCU\SQLEXPRESS" to Azure SQL Database Server "sitecore-azure" in the Resource Group "My-Company-Name" at the Azure data center "West Europe" using the Azure Storage Account "mycompanyname".
+
+
+
+    DatabaseName     : sc81initial_core
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_core;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_master
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_master;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_web
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_web;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
+
+    DatabaseName     : sc81initial_reporting
+    ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_reporting;User 
+                       ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 #>
 function Publish-SitecoreSqlDatabase
 {
@@ -562,46 +681,3 @@ function Publish-SitecoreSqlDatabase
 } 
 
 Export-ModuleMember -Function Publish-SitecoreSqlDatabase -Alias *
-
-<#
-$path = "C:\Program Files\WindowsPowerShell\Modules\Sitecore.Azure\Sitecore.Azure.psd1"
-
-$guid = [guid]::NewGuid().guid
-
-$paramHash = @{
- Path = $path
- RootModule = ".\Sitecore.Azure.psm1"
- ModuleVersion = "0.5.0"
- Guid = $guid
- Author = "Oleg Burov"
- CompanyName = "Sitecore Corporation"
- Copyright = "Copyright © 2015 Sitecore Corporation ."
- Description = "Suitecore Azure Module" 
- PowerShellVersion = "3.0"
- PowerShellHostName = ""
- PowerShellHostVersion = $null
- DotNetFrameworkVersion = "4.0"
- CLRVersion="4.0"
- ProcessorArchitecture = "None"
- RequiredModules = @(   
-   @{ ModuleName = "AzureRM"; ModuleVersion = "1.0.2"},
-   @{ ModuleName = "AzureRM.profile"; ModuleVersion = "1.0.1"},
-   @{ ModuleName = "AzureRM.Resources"; ModuleVersion = "1.0.1"},
-   @{ ModuleName = "AzureRM.Storage"; ModuleVersion = "1.0.1"},
-   @{ ModuleName = "AzureRM.Sql"; ModuleVersion = "1.0.1"}
- )
- RequiredAssemblies = @() 
- ScriptsToProcess = @()  
- TypesToProcess = @() 
- FormatsToProcess = @()
- NestedModules = @()
- FunctionsToExport = "Publish-SitecoreSqlDatabase"
- CmdletsToExport = ""
- VariablesToExport = ""
- AliasesToExport = @()
- ModuleList = @()  
- FileList =  @()    
- PrivateData = $null
-}
-New-ModuleManifest @paramHash
-#>

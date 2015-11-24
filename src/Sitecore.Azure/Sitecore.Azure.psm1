@@ -4,16 +4,12 @@ function Export-SitecoreAzureSqlDatabase
   param([Parameter(Position=0, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
         [System.String]
-        $SqlServerName,                             
+        $SqlServerName,
         [Parameter(Position=1, Mandatory = $true)]        
-        [ValidateNotNullOrEmpty()]
-        [System.String]
-        $SqlServerUser,
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        $SqlServerCredentials,                             
         [Parameter(Position=2, Mandatory = $true)]        
-        [ValidateNotNullOrEmpty()]
-        [System.String]
-        $SqlServerPassword,
-        [Parameter(Position=3, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]
         [System.String[]]
         $SqlServerDatabaseList
@@ -35,8 +31,8 @@ function Export-SitecoreAzureSqlDatabase
     
     &$sqlpackageExe /a:Export `
                     /ssn:$SqlServerName `
-                    /su:$SqlServerUser `
-                    /sp:$SqlServerPassword `
+                    /su:$($SqlServerCredentials.UserName) `
+                    /sp:$($SqlServerCredentials.GetNetworkCredential().Password) `
                     /sdn:$databaseName `
                     /tf:$filePath | Out-Host
     
@@ -179,8 +175,8 @@ function Get-SitecoreAzureSqlServer
         $ServerName,
         [Parameter(Position=2, Mandatory = $true)]        
         [ValidateNotNull()]
-        [PSCredential]
-        $SqlAdministratorCredentials
+        [System.Management.Automation.PSCredential]
+        $SqlServerCredentials
   ) 
   
   # Check if Azure SQL Server instance exists. If it does not, create it.
@@ -195,7 +191,7 @@ function Get-SitecoreAzureSqlServer
       $sqlServer = New-AzureRmSqlServer -ResourceGroupName $ResourceGroup.ResourceGroupName `
                                         -Location $ResourceGroup.Location `
                                         -ServerName $azureSqlServerName `
-                                        -SqlAdministratorCredentials $SqlAdministratorCredentials `
+                                        -SqlAdministratorCredentials $SqlServerCredentials `
                                         -ServerVersion "12.0"
   }
 
@@ -276,8 +272,8 @@ function Import-SitecoreAzureSqlDatabase
         $SqlServerName,
         [Parameter(Position=2, Mandatory = $true)]        
         [ValidateNotNullOrEmpty()]        
-        [PSCredential]
-        $SqlAdministratorCredentials,
+        [System.Management.Automation.PSCredential]
+        $SqlServerCredentials,
         [Parameter(Position=3, Mandatory = $false)]        
         [ValidateNotNullOrEmpty()]
         [System.String]
@@ -316,7 +312,7 @@ function Import-SitecoreAzureSqlDatabase
       }     
       
       $sqlDatabaseServerContext = New-AzureSqlDatabaseServerContext -ServerName $SqlServerName `
-                                                                    -Credential $SqlAdministratorCredentials
+                                                                    -Credential $SqlServerCredentials
 
       if ($sqlDatabaseServerContext -ne $null)
       {
@@ -415,13 +411,9 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
         [System.String]
         $SqlServerName,
         [Parameter(Position=2, Mandatory = $true)]        
-        [ValidateNotNullOrEmpty()]
-        [System.String]
-        $AzureSqlServerAdminLogin,
-        [Parameter(Position=3, Mandatory = $true)]        
-        [ValidateNotNullOrEmpty()]
-        [System.String]
-        $AzureSqlServerPassword
+        [ValidateNotNull()]
+        [System.Management.Automation.PSCredential]
+        $SqlServerCredentials
   )
 
   $sqlDatabaseList = Get-AzureRmSqlDatabase -ResourceGroupName $ResourceGroup.ResourceGroupName `
@@ -439,7 +431,7 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
 
       $info = @{      
         DatabaseName = $database.DatabaseName;
-        ConnectionString = $secureConnectionPolicy.ConnectionStrings.AdoNetConnectionString.Replace("{your_user_id_here}", $AzureSqlServerAdminLogin).Replace("{your_password_here}", $AzureSqlServerPassword)
+        ConnectionString = $secureConnectionPolicy.ConnectionStrings.AdoNetConnectionString.Replace("{your_user_id_here}", $SqlServerCredentials.UserName).Replace("{your_password_here}", $SqlServerCredentials.GetNetworkCredential().Password)
       }
 
       $connectionStringList.Add((New-Object -Type PSObject -Property $info))
@@ -469,13 +461,10 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
     https://github.com/olegburov/Sitecore-Azure-PowerShell/ 
   
   .PARAMETER SqlServerName
-    Specifies the name of the local SQL Server the databases are in. The name must be in the following format {ComputerName}\{InstanceName}, such as "Oleg-PC\SQLEXPRESS".
+    Specifies the name of the local SQL Server the databases are in. The name must be in the following format {ComputerName}\{InstanceName}, for example "Oleg-PC\SQLEXPRESS".
 
-  .PARAMETER SqlServerAdminLogin
-    Specifies the SQL Server administrator name for the local server.
-
-  .PARAMETER SqlServerPassword
-    Specifies the SQL Server administrator password for the local server.
+  .PARAMETER SqlServerCredentials
+    Specifies the SQL Server administrator credentials for the local server.
 
   .PARAMETER SqlServerDatabaseList
     Specifies the list of the database names to retrieve from a local server.
@@ -492,16 +481,11 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
   .PARAMETER AzureSqlServerName
     Specifies the name of the new SQL Database server. The server name must be globally unique.
 
-  .PARAMETER AzureSqlServerAdminLogin
-    Specifies the SQL Database server administrator name for the new server.
+  .PARAMETER AzureSqlServerCredential
+    Specifies the SQL Database server administrator credentials for the new server.
 
-  .PARAMETER AzureSqlServerPassword
-    Specifies the SQL Database server administrator password for the new server.
-
-
-
-  .EXAMPLE       
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web")
+  .EXAMPLE    
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web")
         
     This command publishes the SQL Server database "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server.
   
@@ -520,9 +504,9 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
                        ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 
   .EXAMPLE
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_web") -AzureResourceGroupName "My-Company-Name" -AzureResourceGroupLocation "Australia East"
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_web") -AzureResourceGroupName "MyCompanyName" -AzureResourceGroupLocation "Australia East"
         
-    This command publishes the SQL Server databases "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server in the Resource Group "My-Company-Name" at the Azure data center "Australia East".
+    This command publishes the SQL Server databases "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server in the Resource Group "MyCompanyName" at the Azure data center "Australia East".
 
 
 
@@ -531,7 +515,7 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
                        ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 
   .EXAMPLE    
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_web") -AzureStorageAccountName "mycompanyname"
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_web") -AzureStorageAccountName "mycompanyname"
         
     This command publishes the SQL Server databases "sc81initial_core" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server using the Azure Storage Account "mycompanyname" for BACPAC packages (.bacpac files).
   
@@ -545,10 +529,10 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
     ConnectionString : Server=tcp:sitecore-azure-50876f04.database.secure.windows.net,1433;Database=sc81initial_web;User 
                        ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
                        
-  .EXAMPLE   
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web") -AzureSqlServerName "sitecore-azure" -AzureSqlServerAdminLogin "sitecore" -AzureSqlServerPassword "Experienc3!"
+  .EXAMPLE
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web") -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials
         
-    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server in the Azure data center "West Europe".
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server with specified credentials.
   
 
 
@@ -564,10 +548,10 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
     ConnectionString : Server=tcp:sitecore-azure.database.secure.windows.net,1433;Database=sc81initial_web;User 
                        ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 
-  .EXAMPLE   
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerAdminLogin "sa" -SqlServerPassword "12345" -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web", "sc81initial_reporting") -AzureResourceGroupName "My-Company-Name" -AzureResourceGroupLocation "West Europe" -AzureStorageAccountName "mycompanyname" -AzureSqlServerName "sitecore-azure" -AzureSqlServerAdminLogin "sitecore" -AzureSqlServerPassword "Experienc3!" 
+  .EXAMPLE
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web", "sc81initial_reporting") -AzureResourceGroupName "MyCompanyName" -AzureResourceGroupLocation "West Europe" -AzureStorageAccountName "mycompanyname" -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials 
     
-    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PCU\SQLEXPRESS" to Azure SQL Database Server "sitecore-azure" in the Resource Group "My-Company-Name" at the Azure data center "West Europe" using the Azure Storage Account "mycompanyname".
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to Azure SQL Database Server "sitecore-azure" in the Resource Group "MyCompanyName" at the Azure data center "West Europe" using the Azure Storage Account "mycompanyname".
 
 
 
@@ -595,56 +579,45 @@ function Publish-SitecoreSqlDatabase
     [System.String]
     $SqlServerName = "$env:COMPUTERNAME\SQLEXPRESS",
 
-    [Parameter(Position=1, Mandatory = $true)]                             
-    [ValidateNotNullOrEmpty()]
-    [System.String]
-    $SqlServerAdminLogin,
-    
-    [Parameter(Position=2, Mandatory = $true)]                             
-    [ValidateNotNullOrEmpty()]
-    [System.String]
-    $SqlServerPassword,
+    [Parameter(Position=1, Mandatory = $true)]        
+    [ValidateNotNull()]
+    [System.Management.Automation.PSCredential]
+    $SqlServerCredentials,
 
-    [Parameter(Position=3, Mandatory = $true)]
+    [Parameter(Position=2, Mandatory = $true)]
     [ValidateNotNullOrEmpty()]
     [System.String[]]
     $SqlServerDatabaseList,
     
-    [Parameter(Position=4, Mandatory = $false)]
+    [Parameter(Position=3, Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [System.String]
     $AzureResourceGroupName = "Sitecore-Azure",
 
-    [Parameter(Position=5, Mandatory = $false)]
+    [Parameter(Position=4, Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [System.String]
     $AzureResourceGroupLocation = 'West US',
 
-    [Parameter(Position=6, Mandatory = $false)]
+    [Parameter(Position=5, Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [ValidateLength(3, 24)]
     [System.String]
     $AzureStorageAccountName = "sitecoreazure{0}" -f (Get-AzureRmContext).Subscription.SubscriptionId.Substring(0, 8),
 
-    [Parameter(Position=7, Mandatory = $false)]        
+    [Parameter(Position=6, Mandatory = $false)]        
     [ValidateNotNullOrEmpty()]        
     [System.String]
     $AzureSqlServerName = "sitecore-azure-{0}" -f (Get-AzureRmContext).Subscription.SubscriptionId.Substring(0, 8),
 
-    [Parameter(Position=8, Mandatory = $false)]        
-    [ValidateNotNullOrEmpty()]
-    [System.String]
-    $AzureSqlServerAdminLogin = "sitecore",
-
-    [Parameter(Position=9, Mandatory = $false)]        
-    [ValidateNotNullOrEmpty()]
-    [System.String]
-    $AzureSqlServerPassword = "Experienc3!"
+    [Parameter(Position=7, Mandatory = $false)]        
+    [ValidateNotNull()]
+    [System.Management.Automation.PSCredential]
+    $AzureSqlServerCredentials = (New-Object System.Management.Automation.PSCredential ("sitecore", (ConvertTo-SecureString "Experienc3!" -AsPlainText -Force)))
   )  
 
-  $outputDirectory = Export-SitecoreAzureSqlDatabase -sqlServerName $SqlServerName `
-                                                     -sqlServerUser $SqlServerAdminLogin `
-                                                     -sqlServerPassword $SqlServerPassword `
+  $outputDirectory = Export-SitecoreAzureSqlDatabase -SqlServerName $SqlServerName `
+                                                     -SqlServerCredentials $SqlServerCredentials `
                                                      -sqlServerDatabaseList $SqlServerDatabaseList   
     
   $resourceGroup = Get-SitecoreAzureResourceGroup -Name $AzureResourceGroupName `
@@ -655,27 +628,21 @@ function Publish-SitecoreSqlDatabase
   
   Set-SitecoreAzureBacpacFile -Directory $outputDirectory `
                               -StorageAccountContext $storageAccountContext                        
-  
-  # The password for Azure SQL Server credentials.
-  $securedPassword = ConvertTo-SecureString $AzureSqlServerPassword -AsPlainText -Force
-  # The Azure SQL Server credentials.
-  $credentials = New-Object System.Management.Automation.PSCredential ($AzureSqlServerAdminLogin, $securedPassword)
 
   $SqlServer = Get-SitecoreAzureSqlServer -ResourceGroup $resourceGroup `
                                           -ServerName $AzureSqlServerName `
-                                          -SqlAdministratorCredentials $credentials
+                                          -SqlServerCredentials $AzureSqlServerCredentials
   
   $importRequestList = Import-SitecoreAzureSqlDatabase -ResourceGroup $resourceGroup `
                                                        -SqlServerName $AzureSqlServerName `
-                                                       -SqlAdministratorCredentials  $credentials `
+                                                       -SqlServerCredentials $AzureSqlServerCredentials `
                                                        -StorageAccountContext $storageAccountContext  
  
   Get-SitecoreAzureSqlServerStatus -ImportRequestList $importRequestList
 
   Get-SitecoreAzureSqlDatabaseConnectionString -ResourceGroup $resourceGroup `
                                                -SqlServerName $AzureSqlServerName `
-                                               -AzureSqlServerAdminLogin $AzureSqlServerAdminLogin `
-                                               -AzureSqlServerPassword $AzureSqlServerPassword
+                                               -SqlServerCredentials $AzureSqlServerCredentials
 
   Remove-Item $outputDirectory -Recurse -Force
 } 

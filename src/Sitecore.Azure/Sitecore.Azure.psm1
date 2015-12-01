@@ -281,7 +281,11 @@ function Import-SitecoreAzureSqlDatabase
         [Parameter(Position=4, Mandatory = $true)]  
         [ValidateNotNull()]
         [Microsoft.WindowsAzure.Commands.Common.Storage.AzureStorageContext]
-        $StorageAccountContext
+        $StorageAccountContext,
+        [Parameter(Position=5, Mandatory = $false)]        
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $PricingTier
   )
 
   $blobList = Get-AzureStorageBlob -Context $StorageAccountContext `
@@ -308,7 +312,7 @@ function Import-SitecoreAzureSqlDatabase
         $sqlDatabase = New-AzureRmSqlDatabase –ResourceGroupName $ResourceGroup.ResourceGroupName `
                                               –ServerName $SqlServerName `
                                               –DatabaseName $databaseName `
-                                              -RequestedServiceObjectiveName "S2"
+                                              -RequestedServiceObjectiveName $PricingTier
       }     
       
       $sqlDatabaseServerContext = New-AzureSqlDatabaseServerContext -ServerName $SqlServerName `
@@ -484,6 +488,19 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
   .PARAMETER AzureSqlServerCredential
     Specifies the SQL Database server administrator credentials for the new server.
 
+  .PARAMETER PricingTier
+    Specifies the SQL Database pricing tier to assign to the database. Valid values are: 
+    -- Basis
+    -- S0
+    -- S1
+    -- S2
+    -- S3
+    -- P1
+    -- P2
+    -- P4
+    -- P6
+    -- P11
+
   .EXAMPLE    
     PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web")
         
@@ -530,9 +547,9 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
                        ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
                        
   .EXAMPLE
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web") -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web") -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials -PricingTier "P1"
         
-    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server with specified credentials.
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server with specified credentials and "P1 Premium" price tier.
   
 
 
@@ -613,7 +630,12 @@ function Publish-SitecoreSqlDatabase
     [Parameter(Position=7, Mandatory = $false)]        
     [ValidateNotNull()]
     [System.Management.Automation.PSCredential]
-    $AzureSqlServerCredentials = (New-Object System.Management.Automation.PSCredential ("sitecore", (ConvertTo-SecureString "Experienc3!" -AsPlainText -Force)))
+    $AzureSqlServerCredentials = (New-Object System.Management.Automation.PSCredential ("sitecore", (ConvertTo-SecureString "Experienc3!" -AsPlainText -Force))),
+
+    [Parameter(Position=8, Mandatory = $false)]        
+    [ValidateNotNullOrEmpty()]
+    [System.String]
+    $PricingTier = "S2"
   )  
 
   $outputDirectory = Export-SitecoreAzureSqlDatabase -SqlServerName $SqlServerName `
@@ -636,7 +658,8 @@ function Publish-SitecoreSqlDatabase
   $importRequestList = Import-SitecoreAzureSqlDatabase -ResourceGroup $resourceGroup `
                                                        -SqlServerName $AzureSqlServerName `
                                                        -SqlServerCredentials $AzureSqlServerCredentials `
-                                                       -StorageAccountContext $storageAccountContext  
+                                                       -StorageAccountContext $storageAccountContext `
+                                                       -PricingTier $PricingTier 
  
   Get-SitecoreAzureSqlServerStatus -ImportRequestList $importRequestList
 

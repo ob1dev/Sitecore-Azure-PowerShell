@@ -94,7 +94,11 @@ function Get-SitecoreAzureStorageAccount
         [Parameter(Position=2, Mandatory = $false)]        
         [ValidateNotNullOrEmpty()]
         [System.String]
-        $ContainerName = "databases"
+        $ContainerName = "databases",
+        [Parameter(Position=3, Mandatory = $false)]        
+        [ValidateNotNullOrEmpty()]
+        [System.String]
+        $StorageAccountType
   ) 
 
   $ContainerName = $ContainerName.ToLowerInvariant()
@@ -109,7 +113,7 @@ function Get-SitecoreAzureStorageAccount
     $storageAccount = New-AzureRmStorageAccount -ResourceGroupName $ResourceGroup.ResourceGroupName `
                                                 -Location $ResourceGroup.Location `
                                                 -Name $AccountName `
-                                                -Type Standard_LRS                                                                                           
+                                                -Type $StorageAccountType                                                                                           
   }
                                           
   $storageAccountKey = Get-AzureRmStorageAccountKey -ResourceGroupName $ResourceGroup.ResourceGroupName `
@@ -482,6 +486,14 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
   .PARAMETER AzureStorageAccountName
     Specifies the name of the new Storage Account. The storage name must be globally unique.
 
+  .PARAMETER AzureStorageAccountType
+    Specifies the type of the new Storage Account. Valid values are:
+    -- Premium_LRS (Locally-redundant storage based on Solid State Drive (SSD))
+    -- Standard_LRS (Locally-redundant storage)
+    -- Standard_ZRS (Zone-redundant storage)
+    -- Standard_GRS (Geo-redundant storage)
+    -- Standard_RAGRS (Read access geo-redundant storage)
+
   .PARAMETER AzureSqlServerName
     Specifies the name of the new SQL Database server. The server name must be globally unique.
 
@@ -532,7 +544,7 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
                        ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 
   .EXAMPLE    
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_web") -AzureStorageAccountName "mycompanyname"
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_web") -AzureStorageAccountName "mycompanyname" -AzureStorageAccountType Standard_GRS
         
     This command publishes the SQL Server databases "sc81initial_core" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server using the Azure Storage Account "mycompanyname" for BACPAC packages (.bacpac files).
   
@@ -623,16 +635,22 @@ function Publish-SitecoreSqlDatabase
     $AzureStorageAccountName = "sitecoreazure{0}" -f (Get-AzureRmContext).Subscription.SubscriptionId.Substring(0, 8),
 
     [Parameter(Position=6, Mandatory = $false)]        
+    [ValidateNotNullOrEmpty()]
+    [ValidateSet("Premium_LRS", "Standard_LRS", "Standard_ZRS", "Standard_GRS", "Standard_RAGRS")]
+    [System.String]
+    $AzureStorageAccountType = "Standard_LRS",
+
+    [Parameter(Position=7, Mandatory = $false)]        
     [ValidateNotNullOrEmpty()]        
     [System.String]
     $AzureSqlServerName = "sitecore-azure-{0}" -f (Get-AzureRmContext).Subscription.SubscriptionId.Substring(0, 8),
 
-    [Parameter(Position=7, Mandatory = $false)]        
+    [Parameter(Position=8, Mandatory = $false)]        
     [ValidateNotNull()]
     [System.Management.Automation.PSCredential]
     $AzureSqlServerCredentials = (New-Object System.Management.Automation.PSCredential ("sitecore", (ConvertTo-SecureString "Experienc3!" -AsPlainText -Force))),
 
-    [Parameter(Position=8, Mandatory = $false)]        
+    [Parameter(Position=9, Mandatory = $false)]        
     [ValidateNotNullOrEmpty()]
     [System.String]
     $AzureSqlDatabasePricingTier = "S2"
@@ -646,7 +664,8 @@ function Publish-SitecoreSqlDatabase
                                                   -Location $AzureResourceGroupLocation
 
   $storageAccountContext = Get-SitecoreAzureStorageAccount -ResourceGroup $resourceGroup `
-                                                           -AccountName $AzureStorageAccountName
+                                                           -AccountName $AzureStorageAccountName `
+                                                           -StorageAccountType $AzureStorageAccountType
   
   Set-SitecoreAzureBacpacFile -Directory $outputDirectory `
                               -StorageAccountContext $storageAccountContext                        

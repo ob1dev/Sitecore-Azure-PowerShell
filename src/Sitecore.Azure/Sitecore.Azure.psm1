@@ -625,6 +625,9 @@ function Publish-SitecoreSqlDatabase
 
     [Parameter(Position=4, Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
+    [ValidateSet("CentralUS", "EastUS", "EastUS2", "NorthCentralUS", "SouthCentralUS", "WestUS",
+                 "NorthEurope", "WestEurope", "EastAsia", "SoutheastAsia", "JapanEast", "JapanWest", 
+                 "BrazilSouth", "AustraliaEast", "AustraliaSoutheast", "CentralIndia", "SouthIndia", "WestIndia")]
     [System.String]
     $AzureResourceGroupLocation = 'West US',
 

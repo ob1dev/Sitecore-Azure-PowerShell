@@ -2,11 +2,10 @@
 
 This repository contains a set of PowerShell cmdlets for developers and administrators to deploy Sitecore solutions.
 
-# Getting Started
+## Requirements
 
-It is very easy to get started with Sitecore.Azure module to deploy Sitecore databases to Microsoft Azure.
+It is very easy to get started with Sitecore.Azure module to deploy Sitecore databases to Microsoft Azure. You just need the following components and 10 minutes of your time.
 
-## Requirements:
 - A work or school account / Microsoft account and a Microsoft Azure subscription with the following Azure services enabled:
   - Azure Resource Group
   - Azure Storage

@@ -533,7 +533,7 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
                        ID=sitecore@sitecore-azure-50876f04;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 
   .EXAMPLE
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_web") -AzureResourceGroupName "MyCompanyName" -AzureResourceGroupLocation "Australia East"
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $credentials -SqlServerDatabaseList @("sc81initial_web") -AzureResourceGroupName "MyCompanyName" -AzureResourceGroupLocation AustraliaEast
         
     This command publishes the SQL Server databases "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server in the Resource Group "MyCompanyName" at the Azure data center "Australia East".
 
@@ -561,7 +561,7 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
   .EXAMPLE
     PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web") -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials -AzureSqlDatabasePricingTier "P1"
         
-    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server with specified credentials and "P1 Premium" price tier.
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to an Azure SQL Database Server with specified administrator credentials and "P1 Premium" price tier.
   
 
 
@@ -578,9 +578,9 @@ function Get-SitecoreAzureSqlDatabaseConnectionString
                        ID=sitecore@sitecore-azure;Password=Experienc3!;Trusted_Connection=False;Encrypt=True;Connection Timeout=30
 
   .EXAMPLE
-    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web", "sc81initial_reporting") -AzureResourceGroupName "MyCompanyName" -AzureResourceGroupLocation "West Europe" -AzureStorageAccountName "mycompanyname" -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials 
+    PS C:\> Publish-SitecoreSqlDatabase -SqlServerName "Oleg-PC\SQLEXPRESS" -SqlServerCredentials $localSqlServerCredentials -SqlServerDatabaseList @("sc81initial_core", "sc81initial_master", "sc81initial_web", "sc81initial_reporting") -AzureResourceGroupName "MyCompanyName" -AzureResourceGroupLocation JapanEast -AzureStorageAccountName "mycompanyname" -AzureSqlServerName "sitecore-azure" -AzureSqlServerCredentials $azureSqlServerCredentials 
     
-    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master" and "sc81initial_web" from the local SQL Server "Oleg-PC\SQLEXPRESS" to Azure SQL Database Server "sitecore-azure" in the Resource Group "MyCompanyName" at the Azure data center "West Europe" using the Azure Storage Account "mycompanyname".
+    This command publishes the SQL Server databases "sc81initial_core", "sc81initial_master", "sc81initial_web" and "sc81initial_reporting" from the local SQL Server "Oleg-PC\SQLEXPRESS" to Azure SQL Database Server "sitecore-azure" in the Resource Group "MyCompanyName" at the Azure data center "Japan East" using the Azure Storage Account "mycompanyname".
 
 
 

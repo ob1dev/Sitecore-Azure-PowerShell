@@ -2,6 +2,8 @@
 
 This repository contains a set of PowerShell cmdlets for developers and administrators to deploy Sitecore solutions.
 
+[![NuGet version](https://img.shields.io/badge/powershell-0.5.1-blue.svg)](https://www.powershellgallery.com/packages/Sitecore.Azure/)
+
 ## Requirements
 
 It is very easy to get started with Sitecore.Azure module to deploy Sitecore databases to Microsoft Azure. You just need the following components and 10 minutes of your time.
